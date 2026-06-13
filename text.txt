@@ -1,0 +1,30 @@
+class/
+├── app.py                 # Flask主应用
+├── models.py              # 数据库模型
+├── requirements.txt       # 依赖包
+├── config.py              # 配置文件
+├── templates/             # HTML模板
+│   ├── base.html
+│   ├── index.html
+│   ├── login.html
+│   ├── register.html
+│   ├── admin/
+│   │   ├── dashboard.html
+│   │   ├── pending_users.html
+│   │   ├── class_fund.html
+│   │   ├── achievements_review.html
+│   │   ├── leave_review.html
+│   │   └── statistics.html
+│   └── student/
+│       ├── dashboard.html
+│       ├── my_achievements.html
+│       ├── upload_achievement.html
+│       ├── activities.html
+│       ├── leave_apply.html
+│       └── my_leaves.html
+├── static/                # 静态文件
+│   ├── css/
+│   │   └── style.css
+│   └── uploads/           # 上传文件存储
+└── utils/
+    └── decorators.py      # 装饰器

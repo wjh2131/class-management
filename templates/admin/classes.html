@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班级管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: #f5f7fa; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: bold; color: #333; }
+        tr:hover { background: #f8f9fa; }
+        .badge { padding: 5px 10px; border-radius: 3px; font-size: 12px; }
+        .badge-info { background: #17a2b8; color: white; }
+        .flash-messages { margin-bottom: 20px; }
+        .flash-success { background: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+        .flash-error { background: #f8d7da; color: #721c24; padding: 10px; border-radius: 5px; margin-bottom: 10px; }
+        .nav { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .nav a { color: #667eea; text-decoration: none; margin-right: 20px; }
+        .nav a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="{{ url_for('admin_dashboard') }}">← 返回管理后台</a>
+        </div>
+
+        <div class="header">
+            <h1>班级管理</h1>
+            <p>管理系统中的所有班级</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="flash-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">添加新班级</h2>
+            <form method="POST" action="{{ url_for('admin_classes') }}">
+                <div class="form-group">
+                    <label>班级名称 *</label>
+                    <input type="text" name="name" required placeholder="例如：计算机科学与技术1班">
+                </div>
+                <div class="form-group">
+                    <label>年级 *</label>
+                    <input type="text" name="grade" required placeholder="例如：2024级">
+                </div>
+                <div class="form-group">
+                    <label>班主任</label>
+                    <select name="teacher_id">
+                        <option value="">请选择班主任（可选）</option>
+                        {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">{{ teacher.real_name }} ({{ teacher.phone }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>班级描述</label>
+                    <textarea name="description" rows="3" placeholder="班级简介..."></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">创建班级</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">班级列表</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>班级名称</th>
+                        <th>年级</th>
+                        <th>班主任</th>
+                        <th>学生人数</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for class in classes %}
+                    <tr>
+                        <td>{{ class.id }}</td>
+                        <td>{{ class.name }}</td>
+                        <td><span class="badge badge-info">{{ class.grade }}</span></td>
+                        <td>{{ class.teacher.real_name if class.teacher else '未分配' }}</td>
+                        <td>{{ class.get_student_count() }}</td>
+                        <td>{{ class.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td>
+                            <a href="{{ url_for('admin_class_edit', class_id=class.id) }}" class="btn btn-warning" style="padding: 5px 10px; font-size: 12px;">编辑</a>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: #999;">暂无班级数据</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

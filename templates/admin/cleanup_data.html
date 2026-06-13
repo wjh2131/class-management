@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据清理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background: #f5f7fa; }
+        .container { max-width: 1000px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px; margin-bottom: 30px; }
+        .header h1 { font-size: 28px; margin-bottom: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; transition: all 0.3s; text-decoration: none; display: inline-block; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .card { background: white; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        .alert { padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .alert-warning { background: #fff3cd; color: #856404; border-left: 4px solid #ffc107; }
+        .alert-info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
+        .alert-success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .alert-error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+        .stat-item { background: #f8f9fa; padding: 15px; border-radius: 5px; text-align: center; }
+        .stat-item .label { font-size: 12px; color: #666; margin-bottom: 5px; }
+        .stat-item .value { font-size: 24px; font-weight: bold; color: #667eea; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: bold; color: #333; }
+        .nav { background: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .nav a { color: #667eea; text-decoration: none; margin-right: 20px; }
+        .nav a:hover { text-decoration: underline; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; margin: 15px 0; }
+        .checkbox-group input[type="checkbox"] { width: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <a href="{{ url_for('admin_dashboard') }}">← 返回管理后台</a>
+            <a href="{{ url_for('data_statistics') }}">数据统计</a>
+        </div>
+
+        <div class="header">
+            <h1>数据清理</h1>
+            <p>清理过期的历史数据，释放存储空间</p>
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="alert alert-warning">
+            <strong>⚠️ 警告：</strong>数据清理操作不可恢复！请在执行前确认已备份重要数据。
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">当前数据统计</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="label">用户总数</div>
+                    <div class="value">{{ stats.users.total }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">班级数</div>
+                    <div class="value">{{ stats.classes }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">成果记录</div>
+                    <div class="value">{{ stats.achievements.total }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">活动数</div>
+                    <div class="value">{{ stats.activities }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">请假记录</div>
+                    <div class="value">{{ stats.leaves.total }}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="label">班费记录</div>
+                    <div class="value">{{ stats.class_funds }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="margin-bottom: 20px;">清理设置</h2>
+            <form method="POST" action="{{ url_for('cleanup_data') }}" id="cleanupForm">
+                <div class="form-group">
+                    <label>数据保留年限（年）</label>
+                    <input type="number" name="retention_years" value="5" min="1" max="10" required>
+                    <small style="color: #666; display: block; margin-top: 5px;">超过此年限的数据将被清理</small>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" name="dry_run" id="dryRun" checked>
+                    <label for="dryRun" style="margin: 0;">试运行模式（仅预览，不实际删除）</label>
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>💡 提示：</strong>建议先使用试运行模式查看将要清理的数据量，确认无误后再执行实际清理。
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="submit" class="btn btn-warning" id="previewBtn">预览清理数据</button>
+                    <button type="submit" class="btn btn-danger" id="executeBtn" style="display: none;">执行清理</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card" id="previewResult" style="display: none;">
+            <h2 style="margin-bottom: 20px;">清理预览结果</h2>
+            <div id="previewContent"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('dryRun').addEventListener('change', function() {
+            const previewBtn = document.getElementById('previewBtn');
+            const executeBtn = document.getElementById('executeBtn');
+
+            if (this.checked) {
+                previewBtn.style.display = 'inline-block';
+                executeBtn.style.display = 'none';
+            } else {
+                previewBtn.style.display = 'none';
+                executeBtn.style.display = 'inline-block';
+            }
+        });
+    </script>
+</body>
+</html>

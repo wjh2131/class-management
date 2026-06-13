@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布活动</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar h1 { font-size: 24px; }
+        .nav-links a { color: white; text-decoration: none; margin-left: 25px; padding: 8px 16px; border-radius: 6px; transition: background 0.3s; }
+        .nav-links a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 900px; margin: 30px auto; padding: 0 30px; }
+        .card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .card h2 { margin-bottom: 30px; color: #333; font-size: 24px; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 25px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #333; }
+        input, textarea, select { width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; transition: all 0.3s; font-family: inherit; }
+        input:focus, textarea:focus, select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+        textarea { resize: vertical; min-height: 120px; }
+        .btn { padding: 14px 28px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px; transition: all 0.3s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3); }
+        .btn-secondary { background: #6c757d; color: white; margin-left: 10px; }
+        .alert { padding: 15px 20px; margin-bottom: 25px; border-radius: 10px; }
+        .alert-success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .alert-error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🎯 发布活动</h1>
+        <div class="nav-links">
+            {% if current_user.role == 'teacher' %}
+            <a href="{{ url_for('teacher_dashboard') }}">📊 仪表板</a>
+            <a href="{{ url_for('teacher_class_info') }}">🏫 班级信息</a>
+            {% elif current_user.role == 'monitor' %}
+            <a href="{{ url_for('monitor_dashboard') }}">📊 仪表板</a>
+            <a href="{{ url_for('class_fund') }}">💰 班费管理</a>
+            {% else %}
+            <a href="{{ url_for('admin_dashboard') }}">📊 仪表板</a>
+            <a href="{{ url_for('admin_activities') }}">📋 活动列表</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}">🚪 退出</a>
+        </div>
+    </div>
+
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <h2>填写活动信息</h2>
+            <form method="POST">
+                <div class="form-group">
+                    <label>活动类型 *</label>
+                    <select name="activity_type" id="activity_type" required onchange="toggleClassSelect()">
+                        <option value="class">班级活动</option>
+                        <option value="school">校级活动</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="class_select_group">
+                    <label>所属班级 *</label>
+                    <select name="class_id" id="class_id">
+                        <option value="">请选择班级</option>
+                        {% for class in classes %}
+                        <option value="{{ class.id }}" {{ 'selected' if current_user.role == 'monitor' and current_user.class_id == class.id else '' }}>{{ class.name }} ({{ class.grade }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>活动标题 *</label>
+                    <input type="text" name="title" placeholder="请输入活动标题" required>
+                </div>
+
+                <div class="form-group">
+                    <label>活动描述</label>
+                    <textarea name="description" placeholder="请详细描述活动内容..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>活动地点</label>
+                        <input type="text" name="location" placeholder="例如：教学楼A101">
+                    </div>
+                    <div class="form-group">
+                        <label>人数限制</label>
+                        <input type="number" name="max_participants" placeholder="留空表示不限">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>开始时间 *</label>
+                        <input type="datetime-local" name="start_time" required>
+                    </div>
+                    <div class="form-group">
+                        <label>结束时间 *</label>
+                        <input type="datetime-local" name="end_time" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" name="check_in_enabled" style="width: auto; margin-right: 10px;">
+                        启用签到功能
+                    </label>
+                </div>
+
+                <div style="margin-top: 30px;">
+                    <button type="submit" class="btn btn-primary">🚀 发布活动</button>
+                    <a href="{{ url_for('admin_activities') }}" class="btn btn-secondary" style="text-decoration: none; display: inline-block;">取消</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function toggleClassSelect() {
+            const activityType = document.getElementById('activity_type').value;
+            const classSelectGroup = document.getElementById('class_select_group');
+            const classIdSelect = document.getElementById('class_id');
+
+            if (activityType === 'school') {
+                classSelectGroup.style.display = 'none';
+                classIdSelect.required = false;
+                classIdSelect.value = '';
+            } else {
+                classSelectGroup.style.display = 'block';
+                classIdSelect.required = true;
+            }
+        }
+
+        window.onload = function() {
+            toggleClassSelect();
+            {% if current_user.role == 'monitor' %}
+            document.getElementById('activity_type').value = 'class';
+            toggleClassSelect();
+            {% endif %}
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班级活动</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h1 { font-size: 24px; }
+        .nav-links a { color: white; text-decoration: none; margin-left: 20px; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .activity-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .activity-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .activity-header h3 { color: #333; }
+        .status { padding: 5px 10px; border-radius: 5px; font-size: 12px; }
+        .status-open { background: #d4edda; color: #155724; }
+        .status-closed { background: #f8d7da; color: #721c24; }
+        .info { margin: 10px 0; color: #666; }
+        .btn { padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #667eea; color: white; }
+        .filter-bar { background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .filter-bar h2 { margin-bottom: 15px; }
+        .filter-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .filter-btn { padding: 8px 16px; border-radius: 5px; text-decoration: none; color: white; font-weight: 600; }
+        .filter-btn.active { background: #667eea; }
+        .filter-btn:not(.active) { background: #6c757d; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>班级活动</h1>
+        <div class="nav-links">
+            <a href="{{ url_for('student_dashboard') }}">返回</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="filter-bar">
+            <h2>活动列表</h2>
+            <div class="filter-buttons">
+                <a href="{{ url_for('activities') }}" class="filter-btn {{ 'active' if not current_type else '' }}">全部</a>
+                <a href="{{ url_for('activities', type='school') }}" class="filter-btn {{ 'active' if current_type == 'school' else '' }}">校级活动</a>
+                <a href="{{ url_for('activities', type='class') }}" class="filter-btn {{ 'active' if current_type == 'class' else '' }}">班级活动</a>
+            </div>
+        </div>
+
+        {% for activity in activities %}
+        <div class="activity-card">
+            <div class="activity-header">
+                <h3>{{ activity.title }}</h3>
+                <div style="display: flex; gap: 8px;">
+                    <span class="status" style="background: {{ '#ffc107' if activity.activity_type == 'school' else '#17a2b8' }}; color: white;">{{ activity.activity_type_name }}</span>
+                    <span class="status status-{{ activity.status }}">
+                        {{ '报名中' if activity.status == 'open' else '已结束' }}
+                    </span>
+                </div>
+            </div>
+            <div class="info">
+                <p><strong>🏫 范围：</strong>{{ '全校活动' if activity.activity_type == 'school' else (activity.activity_class.name if activity.activity_class else '未指定班级') }}</p>
+                <p><strong>📅 时间：</strong>{{ activity.start_time.strftime('%Y-%m-%d %H:%M') }} - {{ activity.end_time.strftime('%Y-%m-%d %H:%M') }}</p>
+                <p><strong>📍 地点：</strong>{{ activity.location or '未定' }}</p>
+                <p><strong>👥 人数限制：</strong>{{ activity.max_participants or '不限' }}{% if activity.max_participants %} (已报名: {{ activity.registered_count }}){% endif %}</p>
+                {% if activity.description %}
+                <p><strong>📝 描述：</strong>{{ activity.description }}</p>
+                {% endif %}
+            </div>
+            {% if activity.status == 'open' %}
+            <form method="POST" action="{{ url_for('register_activity', activity_id=activity.id) }}">
+                <button type="submit" class="btn btn-primary">报名参加</button>
+            </form>
+            {% endif %}
+        </div>
+        {% else %}
+        <div class="activity-card">
+            <p style="text-align:center; padding: 40px; color: #999;">暂无活动</p>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>

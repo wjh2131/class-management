@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>活动管理</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar h1 { font-size: 24px; }
+        .nav-links a { color: white; text-decoration: none; margin-left: 25px; padding: 8px 16px; border-radius: 6px; transition: background 0.3s; }
+        .nav-links a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 30px; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 25px; }
+        .card h2 { margin-bottom: 25px; color: #333; font-size: 20px; padding-bottom: 15px; border-bottom: 2px solid #f0f2f5; }
+        .activity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+        .activity-card { background: #f8f9fa; padding: 25px; border-radius: 12px; border-left: 4px solid #667eea; transition: transform 0.3s, box-shadow 0.3s; }
+        .activity-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .activity-header { display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px; }
+        .activity-header h3 { color: #333; font-size: 18px; }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-open { background: #d4edda; color: #155724; }
+        .badge-closed { background: #f8d7da; color: #721c24; }
+        .info-item { margin: 10px 0; color: #666; font-size: 14px; }
+        .info-item strong { color: #333; }
+        .actions { margin-top: 20px; display: flex; gap: 10px; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; transition: all 0.3s; }
+        .btn-edit { background: #667eea; color: white; }
+        .btn-edit:hover { background: #5568d3; transform: translateY(-2px); }
+        .btn-delete { background: #dc3545; color: white; }
+        .btn-delete:hover { background: #c82333; transform: translateY(-2px); }
+        .btn-add { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 600; margin-bottom: 20px; transition: all 0.3s; }
+        .btn-add:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3); }
+        .alert { padding: 15px 20px; margin-bottom: 25px; border-radius: 10px; }
+        .alert-success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .filter-bar { margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+        .filter-btn { padding: 8px 16px; border-radius: 6px; text-decoration: none; color: white; font-weight: 600; transition: all 0.3s; }
+        .filter-btn.active { background: #667eea; }
+        .filter-btn:not(.active) { background: #6c757d; }
+        .filter-btn:hover { transform: translateY(-2px); }
+        select.filter-select { padding: 8px 16px; border-radius: 6px; border: 2px solid #e0e0e0; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>🎯 活动管理</h1>
+        <div class="nav-links">
+            {% if current_user.role == 'teacher' %}
+            <a href="{{ url_for('teacher_dashboard') }}">📊 仪表板</a>
+            <a href="{{ url_for('teacher_class_info') }}">🏫 班级信息</a>
+            {% elif current_user.role == 'monitor' %}
+            <a href="{{ url_for('monitor_dashboard') }}">📊 仪表板</a>
+            <a href="{{ url_for('class_fund') }}">💰 班费管理</a>
+            {% else %}
+            <a href="{{ url_for('admin_dashboard') }}">📊 仪表板</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}">🚪 退出</a>
+        </div>
+    </div>
+
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                <h2 style="margin: 0; border: none; padding: 0;">活动列表 ({{ activities|length }})</h2>
+                <a href="{{ url_for('activity_create') }}" class="btn-add">➕ 发布新活动</a>
+            </div>
+
+            <div class="filter-bar">
+                <a href="{{ url_for('admin_activities') }}" class="filter-btn {{ 'active' if not current_type else '' }}">全部</a>
+                <a href="{{ url_for('admin_activities', type='school') }}" class="filter-btn {{ 'active' if current_type == 'school' else '' }}">校级活动</a>
+                <a href="{{ url_for('admin_activities', type='class') }}" class="filter-btn {{ 'active' if current_type == 'class' else '' }}">班级活动</a>
+
+                {% if classes %}
+                <select class="filter-select" onchange="if(this.value) window.location.href='{{ url_for('admin_activities') }}?class_id=' + this.value; else window.location.href='{{ url_for('admin_activities') }}'"
+
+                    <option value="">所有班级</option>
+                    {% for class in classes %}
+                    <option value="{{ class.id }}" {{ 'selected' if selected_class_id == class.id else '' }}>{{ class.name }}</option>
+                    {% endfor %}
+                </select>
+                {% endif %}
+            </div>
+
+            {% if activities %}
+            <div class="activity-grid">
+                {% for activity in activities %}
+                <div class="activity-card">
+                    <div class="activity-header">
+                        <h3>{{ activity.title }}</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <span class="badge" style="background: {{ '#ffc107' if activity.activity_type == 'school' else '#17a2b8' }}; color: white;">{{ activity.activity_type_name }}</span>
+                            <span class="badge badge-{{ activity.status }}">{{ activity.status_name }}</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <strong>🏫 范围：</strong>{{ '全校' if activity.activity_type == 'school' else (activity.activity_class.name if activity.activity_class else '未指定') }}
+                    </div>
+                    <div class="info-item">
+                        <strong>📅 时间：</strong>{{ activity.start_time.strftime('%Y-%m-%d %H:%M') }} - {{ activity.end_time.strftime('%H:%M') }}
+                    </div>
+                    <div class="info-item">
+                        <strong>📍 地点：</strong>{{ activity.location or '未定' }}
+                    </div>
+                    <div class="info-item">
+                        <strong>👥 报名：</strong>{{ activity.registered_count }}/{{ activity.max_participants or '∞' }}
+                    </div>
+                    {% if activity.description %}
+                    <div class="info-item" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #ddd;">
+                        {{ activity.description[:100] }}{% if activity.description|length > 100 %}...{% endif %}
+                    </div>
+                    {% endif %}
+                    <div class="actions">
+                        <a href="{{ url_for('activity_edit', activity_id=activity.id) }}" class="btn btn-edit">✏️ 编辑</a>
+                        <form method="POST" action="{{ url_for('activity_delete', activity_id=activity.id) }}" style="display:inline;" onsubmit="return confirm('确定要删除这个活动吗？');">
+                            <button type="submit" class="btn btn-delete">🗑️ 删除</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 60px 20px; color: #999;">
+                <div style="font-size: 64px; margin-bottom: 20px;">📭</div>
+                <p>暂无活动，点击右上角发布新活动</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

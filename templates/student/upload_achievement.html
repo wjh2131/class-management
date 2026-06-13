@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上传成果</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h1 { font-size: 24px; }
+        .nav-links a { color: white; text-decoration: none; margin-left: 20px; }
+        .container { max-width: 800px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        input[type="text"], textarea, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 14px; }
+        textarea { resize: vertical; min-height: 100px; }
+        .btn { padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        .btn-primary { background: #667eea; color: white; }
+        .btn-primary:hover { background: #5568d3; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>上传成果</h1>
+        <div class="nav-links">
+            <a href="{{ url_for('student_dashboard') }}">返回</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>成果信息</h2>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>成果标题 *</label>
+                    <input type="text" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label>成果类别 *</label>
+                    <select name="category" required>
+                        <option value="academic">学术类</option>
+                        <option value="sports">体育类</option>
+                        <option value="art">艺术类</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>成果描述</label>
+                    <textarea name="description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>附件（可选）</label>
+                    <input type="file" name="attachment">
+                </div>
+                <button type="submit" class="btn btn-primary">提交</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

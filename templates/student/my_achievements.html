@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>我的成果</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        .navbar { background: #667eea; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .navbar h1 { font-size: 24px; }
+        .nav-links a { color: white; text-decoration: none; margin-left: 20px; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; }
+        .status-pending { color: #ffc107; }
+        .status-approved { color: #28a745; }
+        .status-rejected { color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>我的成果</h1>
+        <div class="nav-links">
+            <a href="{{ url_for('student_dashboard') }}">返回</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>成果列表</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>标题</th>
+                        <th>类别</th>
+                        <th>描述</th>
+                        <th>提交时间</th>
+                        <th>状态</th>
+                        <th>审核意见</th>
+                        <th>附件</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ach in achievements %}
+                    <tr>
+                        <td>{{ ach.title }}</td>
+                        <td>{{ ach.category }}</td>
+                        <td>{{ ach.description or '无' }}</td>
+                        <td>{{ ach.submitted_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td class="status-{{ ach.status }}">
+                            {{ '待审核' if ach.status == 'pending' else ('已通过' if ach.status == 'approved' else '已拒绝') }}
+                        </td>
+                        <td>{{ ach.review_comment or '-' }}</td>
+                        <td>
+                            {% if ach.attachment_path %}
+                            <a href="{{ url_for('uploaded_file', filename=ach.attachment_path) }}" target="_blank">下载</a>
+                            {% else %}
+                            无
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align:center;">暂无成果</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

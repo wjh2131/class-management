@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>请假审核</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; }
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .navbar h1 { font-size: 24px; }
+        .nav-links a { color: white; text-decoration: none; margin-left: 25px; padding: 8px 16px; border-radius: 6px; transition: background 0.3s; }
+        .nav-links a:hover { background: rgba(255,255,255,0.2); }
+        .container { max-width: 1400px; margin: 30px auto; padding: 0 30px; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .filter-bar { display: flex; gap: 15px; margin-bottom: 25px; }
+        .filter-bar a { padding: 10px 20px; text-decoration: none; border-radius: 8px; background: #e9ecef; font-weight: 600; transition: all 0.3s; }
+        .filter-bar a.active { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #f0f2f5; }
+        th { background: #f8f9fa; font-weight: 600; color: #333; }
+        tr:hover { background: #f8f9fa; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; font-weight: 600; transition: all 0.3s; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #218838; transform: translateY(-2px); }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; transform: translateY(-2px); }
+        textarea { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; margin-top: 8px; resize: vertical; font-family: inherit; }
+        .badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .badge-pending { background: #fff3cd; color: #856404; }
+        .badge-approved { background: #d4edda; color: #155724; }
+        .badge-rejected { background: #f8d7da; color: #721c24; }
+        .alert { padding: 15px 20px; margin-bottom: 25px; border-radius: 10px; }
+        .alert-success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .days-badge { background: #667eea; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>📝 请假审核</h1>
+        <div class="nav-links">
+            {% if current_user.role == 'teacher' %}
+            <a href="{{ url_for('teacher_dashboard') }}">📊 仪表板</a>
+            <a href="{{ url_for('teacher_class_info') }}">🏫 班级信息</a>
+            {% elif current_user.role == 'monitor' %}
+            <a href="{{ url_for('monitor_dashboard') }}">📊 仪表板</a>
+            <a href="{{ url_for('class_fund') }}">💰 班费管理</a>
+            {% else %}
+            <a href="{{ url_for('admin_dashboard') }}">📊 仪表板</a>
+            <a href="{{ url_for('statistics') }}">📈 统计分析</a>
+            {% endif %}
+            <a href="{{ url_for('logout') }}">🚪 退出</a>
+        </div>
+    </div>
+
+
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="filter-bar">
+                <a href="{{ url_for('leave_review', status='pending') }}" class="{{ 'active' if current_status == 'pending' }}">⏳ 待审核</a>
+                <a href="{{ url_for('leave_review', status='approved') }}" class="{{ 'active' if current_status == 'approved' }}">✅ 已通过</a>
+                <a href="{{ url_for('leave_review', status='rejected') }}" class="{{ 'active' if current_status == 'rejected' }}">❌ 已拒绝</a>
+            </div>
+
+            {% if leaves %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>学生</th>
+                        <th>请假类型</th>
+                        <th>开始日期</th>
+                        <th>结束日期</th>
+                        <th>天数</th>
+                        <th>事由</th>
+                        <th>附件</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for leave in leaves %}
+                    <tr>
+                        <td><strong>{{ leave.student.real_name }}</strong><br><small style="color:#666;">{{ leave.student.student_id }}</small></td>
+                        <td><span class="badge badge-info">{{ leave.leave_type }}</span></td>
+                        <td>{{ leave.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ leave.end_date.strftime('%Y-%m-%d') }}</td>
+                        <td><span class="days-badge">{{ leave.days }}天</span></td>
+                        <td style="max-width: 200px;">{{ leave.reason }}</td>
+                        <td>
+                            {% if leave.attachment_path %}
+                            <a href="{{ url_for('uploaded_file', filename=leave.attachment_path) }}" target="_blank" style="color: #667eea;">📎 查看</a>
+                            {% else %}
+                            <span style="color:#999;">无</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if leave.status == 'pending' %}
+                            <form method="POST" action="{{ url_for('review_leave', leave_id=leave.id) }}">
+                                <textarea name="comment" placeholder="审核意见（可选）" rows="2"></textarea>
+                                <div style="margin-top: 8px;">
+                                    <button type="submit" name="action" value="approve" class="btn btn-success">✓ 通过</button>
+                                    <button type="submit" name="action" value="reject" class="btn btn-danger">✗ 拒绝</button>
+                                </div>
+                            </form>
+                            {% else %}
+                            <small style="color:#666;">{{ leave.review_comment or '无意见' }}</small>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div style="text-align: center; padding: 60px 20px; color: #999;">
+                <div style="font-size: 64px; margin-bottom: 20px;">📭</div>
+                <p>暂无请假申请</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
